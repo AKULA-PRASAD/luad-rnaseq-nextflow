@@ -34,19 +34,30 @@ GitHub Actions runs this on every push, on two Nextflow versions.
 
 ## Running the real study on an HPC cluster
 
-```bash
-# 1. On a node with internet access (login node): download the 12 runs (~46 GB)
-bin/fetch_sra.sh assets/samplesheet_SRP012656.csv /scratch/$USER/luad
+Written for Northeastern's Explorer cluster (SLURM, Apptainer). Compute nodes there have no internet access, so downloads happen on the login node first.
 
-# 2. Copy the samplesheet next to the FASTQ folder, then submit the pipeline through SLURM
-cp assets/samplesheet_SRP012656.csv /scratch/$USER/luad/
-nextflow run main.nf -profile slurm,singularity \
-    --samplesheet /scratch/$USER/luad/samplesheet_SRP012656.csv \
-    --genome GRCh38.primary_assembly.genome.fa.gz \
-    --gtf gencode.v44.primary_assembly.annotation.gtf.gz \
-    --outdir /scratch/$USER/luad/results -resume
+```bash
+P=/scratch/$USER/luad; mkdir -p $P/{sra,fastq,ref,logs,containers}; cd $P
+
+# 1. Login node: download the 12 runs, the GENCODE v44 reference and the containers
+module load sratoolkit/12Dec2024
+for r in SRR5021{27..38}; do prefetch $r -O sra --max-size 60G; done
+G=https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44
+(cd ref && wget $G/GRCh38.primary_assembly.genome.fa.gz $G/gencode.v44.primary_assembly.annotation.gtf.gz)
+cd containers
+for img in fastqc:0.12.1--hdfd78af_0 star:2.7.11b--h5ca1c30_8 python:3.12.12 \
+           bioconductor-deseq2:1.46.0--r44he5774e6_1 multiqc:1.33--pyhdfd78af_0; do
+  apptainer pull --name "quay.io-biocontainers-${img/:/-}.img" "docker://quay.io/biocontainers/$img"
+done
+cd ..
+
+# 2. Compute nodes: SRA -> FASTQ (array job), a quick test, then the full pipeline
+sbatch ~/luad-rnaseq-nextflow/hpc/fastq_array.sbatch
+sbatch ~/luad-rnaseq-nextflow/hpc/run_test.sbatch
+sbatch --dependency=afterok:<fastq_job_id> ~/luad-rnaseq-nextflow/hpc/run_pipeline.sbatch
 ```
 
+- **`run_pipeline.sbatch`** runs the Nextflow head process. Each pipeline step is then submitted as its own SLURM job (`-profile slurm,singularity`).
 - **Resources:** STAR uses 8 CPUs and 42 GB per task, as in the original run.
 - **Queue:** `--slurm_queue` sets the partition (default `short`).
 - **Existing index:** to reuse a STAR index you already built, pass `--star_index /path/to/index` instead of `--genome`.
