@@ -12,9 +12,10 @@ PIPE=${PIPE:-$HOME/luad-rnaseq-nextflow}
 module load nextflow/25.04.6
 export NXF_SINGULARITY_CACHEDIR=$PWD/containers NXF_OFFLINE=true NXF_ANSI_LOG=false
 cp "$PIPE/assets/samplesheet_SRP012656.csv" .
-nextflow run "$PIPE/main.nf" -profile slurm,singularity \
+# Reuse a STAR index in ./star_index if present, otherwise build it from the genome
+if [ -d star_index ]; then REF="--star_index star_index"; else REF="--genome ref/GRCh38.primary_assembly.genome.fa.gz"; fi
+nextflow run "$PIPE/main.nf" -profile explorer \
     --samplesheet samplesheet_SRP012656.csv \
-    --genome ref/GRCh38.primary_assembly.genome.fa.gz \
+    $REF \
     --gtf ref/gencode.v44.primary_assembly.annotation.gtf.gz \
-    --star_simd sse4.1 \
     --outdir results -resume

@@ -57,7 +57,8 @@ sbatch ~/luad-rnaseq-nextflow/hpc/run_test.sbatch
 sbatch --dependency=afterok:<fastq_job_id> ~/luad-rnaseq-nextflow/hpc/run_pipeline.sbatch
 ```
 
-- **`run_pipeline.sbatch`** runs the Nextflow head process. Each pipeline step is then submitted as its own SLURM job (`-profile slurm,singularity`).
+- **`run_pipeline.sbatch`** runs the Nextflow head process with `-profile explorer`. Each pipeline step is then submitted as its own SLURM job.
+- **Why a cluster profile:** on Explorer, the STAR biocontainer crashed with `Illegal instruction` on several CPU types, even when a conservative build was forced. The `explorer` profile (`conf/explorer.config`) therefore runs the two STAR steps with the cluster's own `star/2.7.11b` module; all other steps stay in their pinned containers.
 - **Resources:** STAR uses 8 CPUs and 42 GB per task, as in the original run.
 - **Queue:** `--slurm_queue` sets the partition (default `short`).
 - **Existing index:** to reuse a STAR index you already built, pass `--star_index /path/to/index` instead of `--genome`.
@@ -80,6 +81,7 @@ sbatch --dependency=afterok:<fastq_job_id> ~/luad-rnaseq-nextflow/hpc/run_pipeli
 Profiles:
 - `docker`, `singularity`, `apptainer`, `conda`: software;
 - `slurm`: cluster execution;
+- `explorer`: Northeastern Explorer (SLURM, Apptainer, cluster STAR module);
 - `test`: bundled data.
 
 Profiles can be combined, for example `-profile slurm,singularity`.
