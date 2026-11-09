@@ -1,0 +1,38 @@
+name: ci
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        nextflow: ["24.10.5", "25.04.8"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Nextflow ${{ matrix.nextflow }}
+        env:
+          NXF_VER: ${{ matrix.nextflow }}
+        run: |
+          curl -s https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+          nextflow -version
+      - name: Lint (Nextflow strict syntax)
+        if: matrix.nextflow == '25.04.8'
+        run: nextflow lint .
+      - name: Regenerate test data and confirm it matches the committed copy
+        run: |
+          python3 tests/make_test_data.py
+          git diff --exit-code tests/data/genome.fa tests/data/genes.gtf tests/data/truth.tsv tests/data/samplesheet.csv
+      - name: Run pipeline (test profile, Docker)
+        run: NXF_ANSI_LOG=false nextflow run main.nf -profile test,docker
+      - name: Check results against planted truth
+        run: python3 tests/check_outputs.py results_test
+      - name: Resume uses the cache
+        run: NXF_ANSI_LOG=false nextflow run main.nf -profile test,docker -resume | tee resume.log && grep -q "cached" resume.log

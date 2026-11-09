@@ -1,0 +1,7 @@
+work/
+results/
+results_test/
+.nextflow/
+.nextflow.log*
+*.pyc
+.DS_Store

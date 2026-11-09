@@ -1,0 +1,13 @@
+sample,condition,fastq_1
+SRR502127,Normal,fastq/SRR502127.fastq.gz
+SRR502128,Normal,fastq/SRR502128.fastq.gz
+SRR502129,Normal,fastq/SRR502129.fastq.gz
+SRR502130,Normal,fastq/SRR502130.fastq.gz
+SRR502131,Normal,fastq/SRR502131.fastq.gz
+SRR502132,Normal,fastq/SRR502132.fastq.gz
+SRR502133,Tumor,fastq/SRR502133.fastq.gz
+SRR502134,Tumor,fastq/SRR502134.fastq.gz
+SRR502135,Tumor,fastq/SRR502135.fastq.gz
+SRR502136,Tumor,fastq/SRR502136.fastq.gz
+SRR502137,Tumor,fastq/SRR502137.fastq.gz
+SRR502138,Tumor,fastq/SRR502138.fastq.gz

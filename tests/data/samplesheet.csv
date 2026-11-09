@@ -1,0 +1,7 @@
+sample,condition,fastq_1
+N1,Normal,N1.fastq.gz
+N2,Normal,N2.fastq.gz
+N3,Normal,N3.fastq.gz
+T1,Tumor,T1.fastq.gz
+T2,Tumor,T2.fastq.gz
+T3,Tumor,T3.fastq.gz
