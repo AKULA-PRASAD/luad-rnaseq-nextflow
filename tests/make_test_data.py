@@ -6,8 +6,13 @@
 * 6 samples  : 3 Normal + 3 Tumor, 27 bp single-end reads, unstranded library
 * truth.tsv  : planted log2 fold changes; GENE01-05 up 8x and GENE06-10 down 8x in Tumor,
                GENE11-40 unchanged (biological noise added via a gamma-Poisson model)
+
+tests/data_paired/ (same genome and genes): matched tumour/normal pairs from 3 patients,
+paired-end 27 bp reads, each sample sequenced as 2 runs, plus a per-patient expression
+effect on GENE11-20 so that the ~ patient + condition design is exercised.
 """
 import gzip
+import io
 import math
 import random
 from pathlib import Path
@@ -18,6 +23,11 @@ OUT = Path(__file__).resolve().parent / "data"
 COMP = str.maketrans("ACGT", "TGCA")
 
 rng = random.Random(SEED)
+
+
+def gz_text(path):
+    """gzip writer with a fixed timestamp, so regenerated files are byte-identical."""
+    return io.TextIOWrapper(gzip.GzipFile(path, "wb", compresslevel=9, mtime=0))
 
 
 def revcomp(s):
@@ -69,7 +79,7 @@ def main():
                 weights.append(rng.gammavariate(1 / DISPERSION, mu * DISPERSION))  # biological noise
             total = sum(weights)
             depth = int(READS_PER_SAMPLE * rng.uniform(0.8, 1.2))
-            with gzip.open(OUT / f"{sid}.fastq.gz", "wt", compresslevel=9) as fq:
+            with gz_text(OUT / f"{sid}.fastq.gz") as fq:
                 for r in range(depth):
                     x, acc = rng.random() * total, 0.0
                     for g, w in zip(genes, weights):
@@ -86,6 +96,50 @@ def main():
             sheet.append(f"{sid},{cond},{sid}.fastq.gz")
     (OUT / "samplesheet.csv").write_text("\n".join(sheet) + "\n")
     print(f"wrote {OUT}")
+    make_paired(genes, mrna, base_expr, lfc)
+
+
+def pick(rng2, genes, weights, total):
+    x, acc = rng2.random() * total, 0.0
+    for g, w in zip(genes, weights):
+        acc += w
+        if acc >= x:
+            return g
+    return genes[-1]
+
+
+def make_paired(genes, mrna, base_expr, lfc, frag=150, pairs_per_run=8000):
+    out = OUT.parent / "data_paired"
+    out.mkdir(exist_ok=True)
+    rng2 = random.Random(SEED + 1)
+    patient_effect = {p: {g["name"]: (rng2.uniform(-1.0, 1.0) if 10 <= i < 20 else 0.0) for i, g in enumerate(genes)}
+                      for p in ("P1", "P2", "P3")}
+    sheet = ["sample,patient,condition,run,fastq_1,fastq_2"]
+    for p in ("P1", "P2", "P3"):
+        for cond in ("Normal", "Tumor"):
+            sid = f"{p}{cond[0]}"
+            weights = []
+            for g in genes:
+                mu = base_expr[g["name"]] * 2 ** (patient_effect[p][g["name"]] + (lfc[g["name"]] if cond == "Tumor" else 0.0))
+                weights.append(rng2.gammavariate(1 / DISPERSION, mu * DISPERSION))
+            total = sum(weights)
+            for run in (1, 2):
+                rid = f"{sid}_run{run}"
+                f1, f2 = out / f"{rid}_1.fastq.gz", out / f"{rid}_2.fastq.gz"
+                with gz_text(f1) as q1, gz_text(f2) as q2:
+                    for r in range(pairs_per_run):
+                        g = pick(rng2, genes, weights, total)
+                        seq = mrna[g["name"]]
+                        a = rng2.randrange(len(seq) - frag + 1)
+                        fr = seq[a:a + frag]
+                        if rng2.random() < 0.5:  # unstranded: fragment from either strand
+                            fr = revcomp(fr)
+                        m1, m2 = fr[:READ_LEN], revcomp(fr)[:READ_LEN]
+                        q1.write(f"@{rid}.{r}/1\n{m1}\n+\n{'I' * READ_LEN}\n")
+                        q2.write(f"@{rid}.{r}/2\n{m2}\n+\n{'I' * READ_LEN}\n")
+                sheet.append(f"{sid},{p},{cond},{rid},{f1.name},{f2.name}")
+    (out / "samplesheet.csv").write_text("\n".join(sheet) + "\n")
+    print(f"wrote {out}")
 
 
 if __name__ == "__main__":

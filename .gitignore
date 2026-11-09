@@ -5,3 +5,5 @@ results_test/
 .nextflow.log*
 *.pyc
 .DS_Store
+results_test_paired/
+hpc_results*/

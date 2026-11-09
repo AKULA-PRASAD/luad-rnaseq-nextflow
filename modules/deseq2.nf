@@ -17,6 +17,7 @@ process DESEQ2 {
     script:
     """
     deseq2.R --counts ${counts} --samplesheet ${samplesheet} \\
-        --reference ${params.reference_level} --padj ${params.padj}
+        --reference ${params.reference_level} --padj ${params.padj} \\
+        --batch "${params.batch_column ?: ''}"
     """
 }

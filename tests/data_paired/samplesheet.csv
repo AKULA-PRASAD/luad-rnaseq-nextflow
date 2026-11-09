@@ -1,0 +1,13 @@
+sample,patient,condition,run,fastq_1,fastq_2
+P1N,P1,Normal,P1N_run1,P1N_run1_1.fastq.gz,P1N_run1_2.fastq.gz
+P1N,P1,Normal,P1N_run2,P1N_run2_1.fastq.gz,P1N_run2_2.fastq.gz
+P1T,P1,Tumor,P1T_run1,P1T_run1_1.fastq.gz,P1T_run1_2.fastq.gz
+P1T,P1,Tumor,P1T_run2,P1T_run2_1.fastq.gz,P1T_run2_2.fastq.gz
+P2N,P2,Normal,P2N_run1,P2N_run1_1.fastq.gz,P2N_run1_2.fastq.gz
+P2N,P2,Normal,P2N_run2,P2N_run2_1.fastq.gz,P2N_run2_2.fastq.gz
+P2T,P2,Tumor,P2T_run1,P2T_run1_1.fastq.gz,P2T_run1_2.fastq.gz
+P2T,P2,Tumor,P2T_run2,P2T_run2_1.fastq.gz,P2T_run2_2.fastq.gz
+P3N,P3,Normal,P3N_run1,P3N_run1_1.fastq.gz,P3N_run1_2.fastq.gz
+P3N,P3,Normal,P3N_run2,P3N_run2_1.fastq.gz,P3N_run2_2.fastq.gz
+P3T,P3,Tumor,P3T_run1,P3T_run1_1.fastq.gz,P3T_run1_2.fastq.gz
+P3T,P3,Tumor,P3T_run2,P3T_run2_1.fastq.gz,P3T_run2_2.fastq.gz

@@ -28,11 +28,18 @@ jobs:
         run: nextflow lint .
       - name: Regenerate test data and confirm it matches the committed copy
         run: |
+          for f in tests/data*/*.fastq.gz; do echo "$f $(gunzip -c $f | md5sum)"; done > before.txt
           python3 tests/make_test_data.py
-          git diff --exit-code tests/data/genome.fa tests/data/genes.gtf tests/data/truth.tsv tests/data/samplesheet.csv
+          for f in tests/data*/*.fastq.gz; do echo "$f $(gunzip -c $f | md5sum)"; done > after.txt
+          diff before.txt after.txt
+          git diff --exit-code -- tests/ ':!*.fastq.gz'
       - name: Run pipeline (test profile, Docker)
         run: NXF_ANSI_LOG=false nextflow run main.nf -profile test,docker
       - name: Check results against planted truth
         run: python3 tests/check_outputs.py results_test
+      - name: Run pipeline (paired-end, 2 runs per sample, ~ patient + condition)
+        run: NXF_ANSI_LOG=false nextflow run main.nf -profile test_paired,docker
+      - name: Check paired results against planted truth
+        run: python3 tests/check_outputs.py results_test_paired tests/data_paired/samplesheet.csv
       - name: Resume uses the cache
-        run: NXF_ANSI_LOG=false nextflow run main.nf -profile test,docker -resume | tee resume.log && grep -q "cached" resume.log
+        run: NXF_ANSI_LOG=false nextflow run main.nf -profile test,docker -resume | tee resume.log && grep -q "Cached process" resume.log

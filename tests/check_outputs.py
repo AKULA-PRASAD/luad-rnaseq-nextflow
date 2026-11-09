@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """Check a test-profile run against the planted truth. Exit code 1 on any failure.
 
-Usage: python3 tests/check_outputs.py [results_dir]   (default results_test)
+Usage: python3 tests/check_outputs.py [results_dir] [samplesheet]
+       defaults: results_test, tests/data/samplesheet.csv
+       paired:   python3 tests/check_outputs.py results_test_paired tests/data_paired/samplesheet.csv
 """
 import csv
 import sys
 from pathlib import Path
 
 res_dir = Path(sys.argv[1] if len(sys.argv) > 1 else "results_test")
-truth_file = Path(__file__).resolve().parent / "data" / "truth.tsv"
+here = Path(__file__).resolve().parent
+sheet_file = Path(sys.argv[2]) if len(sys.argv) > 2 else here / "data" / "samplesheet.csv"
+truth_file = here / "data" / "truth.tsv"
+sheet = list(csv.DictReader(open(sheet_file)))
+n_samples = len({r["sample"] for r in sheet})
+paired_design = "patient" in sheet[0]
 fails = []
 
 
@@ -28,13 +35,17 @@ if fails:
 
 counts = list(csv.DictReader(open(res_dir / "counts/counts_matrix.csv")))
 check(len(counts) == len(truth), f"count matrix has {len(counts)} genes (expected {len(truth)})")
-check(len(counts[0]) - 2 == 6, f"count matrix has {len(counts[0]) - 2} samples (expected 6)")
+check(len(counts[0]) - 2 == n_samples, f"count matrix has {len(counts[0]) - 2} samples (expected {n_samples}, runs merged per sample)")
 check(all(r["gene_name"] for r in counts), "every gene has a gene_name from the GTF")
 assigned = sum(int(v) for r in counts for k, v in r.items() if k not in ("gene_id", "gene_name"))
-check(assigned > 100000, f"{assigned} reads assigned to genes")
+check(assigned > 50000, f"{assigned} reads (or read pairs) assigned to genes")
 
 used = [l.split("\t")[1].strip() for l in open(res_dir / "counts/strandedness.tsv") if l.startswith("# used")]
 check(used == ["unstranded"], f"strandedness detected as {used} (library is unstranded)")
+
+design = [l.split("\t", 1)[1].strip() for l in open(res_dir / "deseq2/summary.txt") if l.startswith("design")]
+want = "~batch + condition" if paired_design else "~condition"
+check(design == [want], f"DESeq2 design is {design} (expected {want})")
 
 res = {r["gene_id"]: r for r in csv.DictReader(open(res_dir / "deseq2/deseq2_results.csv"))}
 sig = {g for g, r in res.items() if r["padj"] not in ("", "NA") and float(r["padj"]) < 0.05}

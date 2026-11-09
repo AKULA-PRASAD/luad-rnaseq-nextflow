@@ -1,11 +1,12 @@
 #!/usr/bin/env Rscript
 # Tumour vs normal differential expression with DESeq2.
-# Design ~ condition; median-of-ratios normalisation; Wald test; Benjamini-Hochberg.
+# Design ~ condition, or ~ batch + condition with --batch <column> (e.g. patient for
+# matched tumour/normal pairs); median-of-ratios normalisation; Wald test; Benjamini-Hochberg.
 # Outputs: deseq2_results.csv, significant_genes.csv, summary.txt, volcano.pdf, pca.pdf
 suppressPackageStartupMessages(library(DESeq2))
 
 args <- commandArgs(trailingOnly = TRUE)
-opt <- list(counts = NULL, samplesheet = NULL, reference = "Normal", padj = 0.05)
+opt <- list(counts = NULL, samplesheet = NULL, reference = "Normal", padj = 0.05, batch = "")
 i <- 1
 while (i <= length(args)) {
   key <- sub("^--", "", args[i]); opt[[key]] <- args[i + 1]; i <- i + 2
@@ -13,8 +14,14 @@ while (i <= length(args)) {
 alpha <- as.numeric(opt$padj)
 
 raw <- read.csv(opt$counts, check.names = FALSE, stringsAsFactors = FALSE)
-meta <- read.csv(opt$samplesheet, stringsAsFactors = FALSE, strip.white = TRUE)
-stopifnot(!anyDuplicated(meta$sample), all(meta$sample %in% colnames(raw)))
+sheet <- read.csv(opt$samplesheet, stringsAsFactors = FALSE, strip.white = TRUE)
+batch <- if (is.null(opt$batch) || opt$batch %in% c("", "null", "NULL")) "" else opt$batch
+keep <- c("sample", "condition", if (nzchar(batch)) batch)
+if (!all(keep %in% colnames(sheet))) stop("Samplesheet lacks column(s): ", paste(setdiff(keep, colnames(sheet)), collapse = ", "))
+# The samplesheet has one row per sequencing run; collapse to one row per sample
+meta <- unique(sheet[, keep, drop = FALSE])
+if (anyDuplicated(meta$sample)) stop("A sample has rows with different condition or batch values")
+stopifnot(all(meta$sample %in% colnames(raw)))
 
 counts <- as.matrix(raw[, meta$sample])
 rownames(counts) <- raw$gene_id
@@ -27,7 +34,13 @@ if (nlevels(meta$condition) != 2) stop("Exactly two conditions are required")
 if (any(table(meta$condition) < 2)) stop("Each condition needs at least 2 samples")
 rownames(meta) <- meta$sample
 
-dds <- DESeqDataSetFromMatrix(counts, colData = meta, design = ~ condition)
+if (nzchar(batch)) {
+  meta$batch <- factor(meta[[batch]])
+  design <- ~ batch + condition
+} else {
+  design <- ~ condition
+}
+dds <- DESeqDataSetFromMatrix(counts, colData = meta, design = design)
 dds <- DESeq(dds, quiet = TRUE)
 test_level <- setdiff(levels(meta$condition), opt$reference)
 res <- results(dds, contrast = c("condition", test_level, opt$reference), alpha = alpha)
@@ -43,6 +56,7 @@ write.csv(sig, "significant_genes.csv", row.names = FALSE)
 n_up <- sum(sig$log2FoldChange > 0); n_down <- sum(sig$log2FoldChange < 0)
 summary_lines <- c(
   sprintf("contrast\t%s vs %s", test_level, opt$reference),
+  sprintf("design\t%s", paste(deparse(design), collapse = "")),
   sprintf("samples\t%d (%s)", ncol(dds), paste(sprintf("%s=%d", names(table(meta$condition)), table(meta$condition)), collapse = ", ")),
   sprintf("genes_tested\t%d", nrow(out)),
   sprintf("genes_with_padj\t%d", sum(!is.na(out$padj))),
