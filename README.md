@@ -72,6 +72,7 @@ sbatch --dependency=afterok:<fastq_job_id> ~/luad-rnaseq-nextflow/hpc/run_pipeli
 | `--sjdb_overhang` | 26 | Read length − 1 |
 | `--sa_index_nbases` | 14 | STAR `--genomeSAindexNbases` (14 for human) |
 | `--strandedness` | auto | `auto`, `unstranded`, `forward` or `reverse` |
+| `--star_simd` | none | Containers only: force one STAR build (`sse4.1`, `avx`, `avx2`). Use on clusters with mixed CPU types, where the container's automatic choice can crash with `Illegal instruction` |
 | `--reference_level` | Normal | DESeq2 reference condition |
 | `--padj` | 0.05 | Significance threshold (Benjamini–Hochberg) |
 | `--outdir` | results | Output folder |

@@ -17,6 +17,9 @@ process STAR_ALIGN {
     script:
     def files = [reads].flatten()
     def gz    = files[0].name.endsWith('.gz')
+    // The STAR biocontainer ships several CPU-specific builds and picks one from /proc/cpuinfo.
+    // On mixed-CPU clusters that choice can crash (SIGILL); --star_simd forces one build, e.g. sse4.1.
+    def star  = params.star_simd ? "STAR-${params.star_simd}" : 'STAR'
     // STAR streams .gz input through --readFilesCommand on Linux (HPC, CI). STAR builds for
     // macOS cannot spawn that command, so on macOS the reads are decompressed first.
     """
@@ -30,7 +33,7 @@ process STAR_ALIGN {
             CMD="--readFilesCommand gunzip -c"
         fi
     fi
-    STAR --runThreadN ${task.cpus} \\
+    ${star} --runThreadN ${task.cpus} \\
         --genomeDir ${index} \\
         --readFilesIn \$READS \\
         \$CMD \\

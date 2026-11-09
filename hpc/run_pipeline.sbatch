@@ -16,4 +16,5 @@ nextflow run "$PIPE/main.nf" -profile slurm,singularity \
     --samplesheet samplesheet_SRP012656.csv \
     --genome ref/GRCh38.primary_assembly.genome.fa.gz \
     --gtf ref/gencode.v44.primary_assembly.annotation.gtf.gz \
+    --star_simd sse4.1 \
     --outdir results -resume
