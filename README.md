@@ -131,10 +131,49 @@ An earlier version of this analysis, run as separate SLURM scripts in February 2
 - **The earlier biological conclusions are withdrawn.**
 - **The fix:** this repository uses the correct 24 runs, taken directly from the GEO/SRA records (`assets/samplesheet_GSE37764.csv`, which includes the GSM accession of each run).
 
+## Results: GSE37764
+
+Full run on the Explorer cluster: 24 runs, 12 samples, 3 h 16 min in a single 16-CPU allocation (`hpc/run_pipeline_node.sbatch`).
+
+**Read QC and alignment**
+- 54–83 million read pairs per sample (two runs merged).
+- 82.7–92.3 % of pairs mapped uniquely to GRCh38.
+- 39–56 million pairs per sample assigned to GENCODE v44 genes.
+- Library detected as unstranded: each strand held 50.0 % of gene-assigned reads.
+
+**Sample structure** (PCA of the 500 most variable genes)
+- PC1 explains 52 % of the variance and separates all 6 tumours from all 6 normal samples.
+- Every sample's most similar sample (Pearson correlation of log counts) has the same tissue type.
+
+![PCA](docs/pca_GSE37764.png)
+
+**Differential expression** (`~ patient + condition`, Benjamini–Hochberg)
+- 7,541 genes at padj < 0.05: 3,760 higher and 3,781 lower in tumour.
+- 5,299 of them also change at least 2-fold (|log2FC| ≥ 1).
+- Full summary: [`docs/deseq2_summary_GSE37764.txt`](docs/deseq2_summary_GSE37764.txt).
+
+![Volcano plot](docs/volcano_GSE37764.png)
+
+**Known lung biology recovered**
+
+| Group | Genes (log2 fold change, tumour vs normal) |
+|---|---|
+| Normal lung, lower in tumour | AGER −4.6, CA4 −6.1, CLDN18 −3.8, CAV1 −3.6, SFTPC −3.2, TEK −2.8, ADH1B −2.7, PECAM1 −2.1 |
+| Higher in tumour | CEACAM5 +5.5, SPP1 +5.8, MMP11 +5.1, COL11A1 +5.1, GREM1 +4.5, TOP2A +2.8, MKI67 +1.9 |
+| Unchanged | NKX2-1 +0.1, NAPSA +0.1 |
+
+All listed changes have padj < 10⁻⁴ (largest: MKI67, 2 × 10⁻⁵).
+
+**How to read this:**
+- The losses mark normal alveolar and capillary tissue: type I and II pneumocytes (AGER, SFTPC, CLDN18) and lung capillary endothelium (CA4, TEK, PECAM1).
+- The gains are typical of tumours: proliferation (TOP2A, MKI67) and tumour stroma or invasion (COL11A1, MMP11, SPP1).
+- NKX2-1 and NAPSA are lung-lineage markers that adenocarcinomas usually keep, so no change is the expected result.
+- In bulk tissue, part of each change reflects a different mix of cell types, not only different regulation (see Limitations).
+
 ## Status
 
 - **Pipeline:** complete. Both test profiles pass in CI (Linux, Docker).
-- **GSE37764 on HPC:** in progress. Results will be added here when the run is complete.
+- **GSE37764:** complete (results above). BAM files are not included in the repository.
 
 ## Limitations
 

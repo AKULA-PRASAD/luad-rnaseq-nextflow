@@ -1,0 +1,9 @@
+contrast	Tumor vs Normal
+design	~batch + condition
+samples	12 (Normal=6, Tumor=6)
+genes_tested	62754
+genes_with_padj	31293
+significant_padj_lt_0.05	7541
+up_in_Tumor	3760
+down_in_Tumor	3781
+deseq2_version	1.46.0
