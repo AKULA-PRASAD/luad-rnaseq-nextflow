@@ -72,6 +72,7 @@ sbatch --dependency=afterok:<fastq_job_id> ~/luad-rnaseq-nextflow/hpc/run_pipeli
 - **Why a cluster profile:** on Explorer, the STAR biocontainer crashed with `Illegal instruction` on several CPU types, even when a conservative build was forced. The `explorer` profile (`conf/explorer.config`) therefore runs the two STAR steps with the cluster's own `star/2.7.11b` module; all other steps stay in their pinned containers.
 - **Resources:** STAR uses 8 CPUs and 42 GB per task.
 - **Queue:** `--slurm_queue` sets the partition (default `short`).
+- **If the scheduler is unreliable:** `hpc/run_pipeline_node.sbatch` (profile `explorer_node`) runs the whole pipeline inside one 16-CPU, 100 GB allocation with Nextflow's local executor, so no per-step job submissions are needed.
 
 ## Parameters
 
