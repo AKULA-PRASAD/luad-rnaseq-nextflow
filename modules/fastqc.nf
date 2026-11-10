@@ -12,8 +12,12 @@ process FASTQC {
     tuple val(meta), path('*.html'), emit: html
     tuple val(meta), path('*.zip'),  emit: zip
 
+    // FastQC is a Java program. Each JVM writes /tmp/hsperfdata_<user>/<pid>; parallel tasks in
+    // separate containers can share a pid and the host /tmp, collide on that file and crash with
+    // SIGBUS. -XX:-UsePerfData turns the file off; --dir keeps FastQC's temp files in the work dir.
     script:
     """
-    fastqc --threads ${task.cpus} --quiet ${reads}
+    export _JAVA_OPTIONS="-XX:-UsePerfData"
+    fastqc --threads ${task.cpus} --quiet --dir . ${reads}
     """
 }
