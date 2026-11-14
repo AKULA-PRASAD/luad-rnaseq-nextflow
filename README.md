@@ -185,7 +185,11 @@ sbatch --dependency=afterok:$J ~/luad-rnaseq-nextflow/hpc/run_pipeline_node.sbat
 
 ## Results: GSE37764
 
-All 24 runs went through the pipeline on the Explorer cluster in one 16-CPU, 100 GB allocation, taking 3 h 16 min (profile `explorer_node`). The files in [`docs/`](docs/) are copied from that run's output.
+All 24 runs went through the pipeline on the Explorer cluster in one 16-CPU, 100 GB allocation (profile `explorer_node`):
+- the first full run took 3 h 16 min, including building the STAR index;
+- a second, from-scratch run of release 1.0.0, reusing the index, took 2 h 18 min. All 40 tasks succeeded.
+
+The files in [`docs/`](docs/) are copied from these runs' output. Tool versions for the 1.0.0 run: [`docs/software_versions_GSE37764.yml`](docs/software_versions_GSE37764.yml).
 
 ### Read QC and alignment
 
@@ -244,6 +248,24 @@ All listed changes have padj < 10⁻⁴ (largest: MKI67, 2 × 10⁻⁵).
 - The gains are typical of tumours: proliferation (TOP2A, MKI67) and tumour stroma or invasion (COL11A1, MMP11, SPP1).
 - NKX2-1 and NAPSA are lung-lineage markers that adenocarcinomas usually keep, so no change is the expected result.
 
+### Pathway enrichment (Hallmark GSEA)
+
+Pre-ranked GSEA (fgsea 1.32.2) on the DESeq2 Wald statistic of the 31,135 named genes with an adjusted p-value, against the 50 MSigDB Hallmark gene sets.
+- 38 of 50 sets reach padj < 0.05: 6 enriched in tumour, 32 enriched in normal tissue.
+- Full table: [`docs/gsea_results_GSE37764.tsv`](docs/gsea_results_GSE37764.tsv).
+
+| Direction | Hallmark set (normalised enrichment score) |
+|---|---|
+| Higher in tumour | E2F targets 2.69, G2M checkpoint 2.41, glycolysis 2.28, mTORC1 signalling 1.58, MYC targets v1 1.58, unfolded protein response 1.52 |
+| Higher in normal tissue | TNF-α signalling via NF-κB −3.16, inflammatory response −2.48, TGF-β signalling −2.39, myogenesis −2.39, IL-6/JAK/STAT3 −2.09, complement −2.09, hypoxia −2.02, epithelial–mesenchymal transition −1.81 |
+
+![Hallmark GSEA](docs/gsea_nes_GSE37764.png)
+
+**How to read this:**
+- **Tumour side:** the sets enriched in tumour describe cell division (E2F targets, G2M checkpoint), growth signalling (MYC, mTORC1) and glycolytic metabolism. This agrees with the gene-level gains in TOP2A and MKI67.
+- **Normal side:** many sets enriched in normal tissue reflect what normal lung contains more of: blood vessels, smooth muscle, and immune and stromal cells. Examples are myogenesis, complement and the inflammatory sets.
+- **Caution:** in bulk tissue these scores mix cell composition with gene regulation (see Limitations). For example, the immediate-early genes in the TNF-α/NF-κB set can also respond to tissue handling. The scores therefore show differences between tissues, not active pathways in tumour cells.
+
 ## Reproducibility
 
 - **Pinned software:** every tool version is pinned per process, both as a container image and as a conda package.
@@ -258,6 +280,10 @@ All listed changes have padj < 10⁻⁴ (largest: MKI67, 2 × 10⁻⁵).
   - regenerates the synthetic data and confirms it matches the committed copy byte for byte (after decompression);
   - runs both test profiles in Docker and checks the results against the planted truth;
   - confirms that `-resume` uses the cache.
+- **Reproduced on the cluster:** the 1.0.0 rerun of GSE37764 reproduced the first run:
+  - an identical count matrix;
+  - the same 7,541 significant genes;
+  - log2 fold changes and adjusted p-values within 10⁻⁶ of the first run for all 62,754 genes.
 - **Not repeated in CI:** the full GSE37764 run needs about 71 GB of input and a 42 GB STAR index, so CI does not rerun it. Its outputs are recorded in `docs/`.
 
 ## Design decisions

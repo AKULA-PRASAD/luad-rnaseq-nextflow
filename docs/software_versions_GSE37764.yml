@@ -1,0 +1,17 @@
+"DESEQ2":
+    r: "4.4.3"
+    deseq2: "1.46.0"
+"FASTQC":
+    fastqc: "0.12.1"
+"GSEA":
+    r: "4.4.2"
+    fgsea: "1.32.2"
+"MERGE_COUNTS":
+    python: "3.12.12"
+"MULTIQC":
+    multiqc: "1.33"
+"STAR_ALIGN":
+    star: "2.7.11b"
+"Workflow":
+    luad-rnaseq-nextflow: "1.0.0"
+    nextflow: "25.04.6"

@@ -20,7 +20,7 @@ First public release.
 - Synthetic test datasets with planted effects (single-end, and paired-end with several runs per sample), checked against the known truth.
 - Unit tests for count merging and strandedness detection.
 - GitHub Actions CI on Nextflow 24.10.5 and 25.04.8. It runs lint, structure and syntax checks and the unit tests, checks that every profile resolves, tests the samplesheet validation, runs both test profiles, checks the test data is reproducible and checks that `-resume` uses the cache.
-- Full analysis of GEO GSE37764 (6 patients, tumour and matched normal), with results and the MultiQC report in `docs/`.
+- Full analysis of GEO GSE37764 (6 patients, tumour and matched normal), with results and the MultiQC report in `docs/`, the Hallmark GSEA table and figure, and the tool versions. A from-scratch rerun of 1.0.0 reproduced the first run's counts and DESeq2 results.
 
 ### Fixed during development
 - The STAR biocontainer crashed with `Illegal instruction` on some cluster CPUs. The Explorer profiles therefore use the cluster's STAR module.
