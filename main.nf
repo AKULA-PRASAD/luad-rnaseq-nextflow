@@ -32,6 +32,15 @@ workflow {
     def sheet = file(params.samplesheet, checkIfExists: true)
     def base  = sheet.parent
 
+    // Whole-sheet checks that a per-row check cannot see
+    def rows = sheet.splitCsv(header: true, strip: true)
+    if (!rows) error "Samplesheet ${sheet} has no rows"
+    def fastqs = rows.collectMany { r -> [r.fastq_1, r.fastq_2].findAll { v -> v } }
+    def dup_fq = fastqs.countBy { v -> v }.findAll { _k, n -> n > 1 }.keySet()
+    if (dup_fq) error "Samplesheet lists the same FASTQ file more than once: ${dup_fq.join(', ')}"
+    def runs = rows.collect { r -> r.run ?: r.fastq_1 }
+    if (runs.unique(false).size() != runs.size()) error "Samplesheet has duplicate values in the run column"
+
     // One row per sequencing run. Several rows with the same `sample` are merged at alignment.
     ch_rows = Channel.fromPath(sheet)
         .splitCsv(header: true, strip: true)

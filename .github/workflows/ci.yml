@@ -1,4 +1,6 @@
 name: ci
+permissions:
+  contents: read
 on:
   push:
   pull_request:
@@ -26,6 +28,31 @@ jobs:
       - name: Lint (Nextflow strict syntax)
         if: matrix.nextflow == '25.04.8'
         run: nextflow lint .
+      - name: Repository structure and script syntax
+        run: |
+          for f in main.nf nextflow.config README.md LICENSE CITATION.cff assets/samplesheet_GSE37764.csv \
+                   modules/{fastqc,star_index,star_align,merge_counts,deseq2,multiqc}.nf \
+                   bin/{merge_counts.py,deseq2.R,fetch_sra.sh} conf/{test,test_paired,explorer,explorer_node}.config; do
+            test -f "$f" || { echo "missing: $f"; exit 1; }
+          done
+          test -x bin/merge_counts.py && test -x bin/deseq2.R && test -x bin/fetch_sra.sh
+          for f in bin/*.sh hpc/*.sbatch; do bash -n "$f"; done
+          python3 -m py_compile bin/merge_counts.py tests/make_test_data.py tests/check_outputs.py
+          python3 -c "import csv; rows=list(csv.DictReader(open('assets/samplesheet_GSE37764.csv'))); \
+            assert len(rows)==24 and len({r['run'] for r in rows})==24 and len({r['sample'] for r in rows})==12, 'GSE37764 samplesheet'"
+      - name: Every profile resolves
+        run: |
+          for p in docker singularity apptainer conda slurm explorer explorer_node test test_paired; do
+            nextflow config -profile "$p" . > /dev/null && echo "ok: $p"
+          done
+      - name: Samplesheet validation rejects a FASTQ listed twice
+        run: |
+          { head -n 2 tests/data/samplesheet.csv; sed -n 2p tests/data/samplesheet.csv | sed 's/^N1,/N9,/'; } > dup.csv
+          sed -i "s#,N1.fastq.gz#,$PWD/tests/data/N1.fastq.gz#" dup.csv
+          if NXF_ANSI_LOG=false nextflow run main.nf -profile test --samplesheet dup.csv --outdir dup_out > dup.log 2>&1; then
+            echo "pipeline accepted a duplicated FASTQ"; exit 1
+          fi
+          grep -q "same FASTQ file more than once" dup.log
       - name: Regenerate test data and confirm it matches the committed copy
         run: |
           for f in tests/data*/*.fastq.gz; do echo "$f $(gunzip -c $f | md5sum)"; done > before.txt

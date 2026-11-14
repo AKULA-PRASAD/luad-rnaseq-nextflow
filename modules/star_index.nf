@@ -1,5 +1,5 @@
 // Build the STAR genome index once; reused by every alignment task.
-// sjdbOverhang = read length - 1 (26 for the 27 bp reads of SRP012656).
+// sjdbOverhang = read length - 1 (77 for the 2 x 78 bp reads of GSE37764; 26 for the 27 bp test reads).
 process STAR_INDEX {
     tag "${fasta.simpleName}"
     label 'process_high'
