@@ -13,10 +13,12 @@ process MERGE_COUNTS {
     output:
     path 'counts_matrix.csv',    emit: matrix
     path 'strandedness.tsv',     emit: strandedness
+    path 'versions.yml', emit: versions
 
     script:
     """
     merge_counts.py --gtf ${gtf} --strandedness ${strandedness} \\
         --out counts_matrix.csv --report strandedness.tsv ${tabs}
+    printf '"%s":\\n    python: "%s"\\n' "${task.process}" "\$(python3 -c 'import platform; print(platform.python_version())')" > versions.yml
     """
 }

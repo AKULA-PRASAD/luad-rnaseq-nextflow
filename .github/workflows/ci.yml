@@ -30,16 +30,18 @@ jobs:
         run: nextflow lint .
       - name: Repository structure and script syntax
         run: |
-          for f in main.nf nextflow.config README.md LICENSE CITATION.cff assets/samplesheet_GSE37764.csv \
-                   modules/{fastqc,star_index,star_align,merge_counts,deseq2,multiqc}.nf \
-                   bin/{merge_counts.py,deseq2.R,fetch_sra.sh} conf/{test,test_paired,explorer,explorer_node}.config; do
+          for f in main.nf nextflow.config README.md LICENSE CITATION.cff assets/samplesheet_GSE37764.csv assets/h.all.v2024.1.Hs.symbols.gmt \
+                   modules/{fastqc,star_index,star_align,merge_counts,deseq2,gsea,multiqc}.nf \
+                   bin/{merge_counts.py,deseq2.R,gsea.R,fetch_sra.sh} conf/{test,test_paired,explorer,explorer_node}.config; do
             test -f "$f" || { echo "missing: $f"; exit 1; }
           done
-          test -x bin/merge_counts.py && test -x bin/deseq2.R && test -x bin/fetch_sra.sh
+          test -x bin/merge_counts.py && test -x bin/deseq2.R && test -x bin/gsea.R && test -x bin/fetch_sra.sh
           for f in bin/*.sh hpc/*.sbatch; do bash -n "$f"; done
-          python3 -m py_compile bin/merge_counts.py tests/make_test_data.py tests/check_outputs.py
+          python3 -m py_compile bin/merge_counts.py tests/make_test_data.py tests/check_outputs.py tests/test_merge_counts.py
           python3 -c "import csv; rows=list(csv.DictReader(open('assets/samplesheet_GSE37764.csv'))); \
             assert len(rows)==24 and len({r['run'] for r in rows})==24 and len({r['sample'] for r in rows})==12, 'GSE37764 samplesheet'"
+      - name: Unit tests (count merging and strandedness detection)
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Every profile resolves
         run: |
           for p in docker singularity apptainer conda slurm explorer explorer_node test test_paired; do

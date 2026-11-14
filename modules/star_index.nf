@@ -12,6 +12,7 @@ process STAR_INDEX {
 
     output:
     path 'star_index', emit: index
+    path 'versions.yml', emit: versions
 
     script:
     def fa_gz  = fasta.name.endsWith('.gz')
@@ -31,5 +32,6 @@ process STAR_INDEX {
         --sjdbOverhang ${params.sjdb_overhang} \\
         --genomeSAindexNbases ${params.sa_index_nbases} \\
         ${ram}
+    printf '"%s":\\n    star: "%s"\\n' "${task.process}" "\$(STAR --version)" > versions.yml
     """
 }

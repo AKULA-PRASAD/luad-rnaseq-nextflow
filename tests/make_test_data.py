@@ -95,6 +95,12 @@ def main():
                     fq.write(f"@{sid}.{r}\n{read}\n+\n{'I' * READ_LEN}\n")
             sheet.append(f"{sid},{cond},{sid}.fastq.gz")
     (OUT / "samplesheet.csv").write_text("\n".join(sheet) + "\n")
+    # Gene sets for the GSEA step: the planted up genes, the planted down genes, and a null set
+    names = [g["name"] for g in genes]
+    (OUT / "genesets.gmt").write_text(
+        "TEST_UP_IN_TUMOR\tplanted up\t" + "\t".join(names[0:5]) + "\n"
+        "TEST_DOWN_IN_TUMOR\tplanted down\t" + "\t".join(names[5:10]) + "\n"
+        "TEST_UNCHANGED\tno planted change\t" + "\t".join(names[20:30]) + "\n")
     print(f"wrote {OUT}")
     make_paired(genes, mrna, base_expr, lfc)
 

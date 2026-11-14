@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 /*
- * LUAD RNA-seq: raw FASTQ -> QC -> STAR alignment -> gene counts -> DESeq2
+ * LUAD RNA-seq: raw FASTQ -> QC -> STAR alignment -> gene counts -> DESeq2 -> GSEA
  *
  * Lung adenocarcinoma tumour vs matched normal tissue from never-smoker women
  * (GEO GSE37764 / SRA SRP012656: 6 patients, paired-end RNA-seq, 2 runs per sample).
@@ -12,6 +12,7 @@ include { STAR_INDEX   } from './modules/star_index'
 include { STAR_ALIGN   } from './modules/star_align'
 include { MERGE_COUNTS } from './modules/merge_counts'
 include { DESEQ2       } from './modules/deseq2'
+include { GSEA         } from './modules/gsea'
 include { MULTIQC      } from './modules/multiqc'
 
 // Resolve a samplesheet path: absolute paths and URLs as given, relative paths
@@ -26,6 +27,7 @@ workflow {
     if (!params.samplesheet) error "Set --samplesheet (columns: sample,condition,fastq_1[,fastq_2,run,<batch>])"
     if (!params.star_index && !(params.genome && params.gtf)) error "Set --genome and --gtf, or --star_index"
     if (!params.gtf) error "Set --gtf (needed for gene names and counting)"
+    if (!params.skip_gsea && !params.gsea_gmt) error "Set --gsea_gmt, or --skip_gsea"
     if (!(params.strandedness in ['auto', 'unstranded', 'forward', 'reverse']))
         error "--strandedness must be auto, unstranded, forward or reverse"
 
@@ -87,9 +89,24 @@ workflow {
 
     DESEQ2(MERGE_COUNTS.out.matrix, sheet)
 
+    if (!params.skip_gsea) {
+        GSEA(DESEQ2.out.results, file(params.gsea_gmt, checkIfExists: true))
+    }
+
     MULTIQC(
         FASTQC.out.zip.map { _meta, z -> z }
             .mix(STAR_ALIGN.out.log.map { _meta, l -> l })
             .collect()
     )
+
+    // One software_versions.yml for the run: each process reports its tool versions
+    ch_versions = FASTQC.out.versions
+        .mix(STAR_ALIGN.out.versions, MERGE_COUNTS.out.versions, DESEQ2.out.versions, MULTIQC.out.versions)
+    if (!params.star_index) ch_versions = ch_versions.mix(STAR_INDEX.out.versions)
+    if (!params.skip_gsea)  ch_versions = ch_versions.mix(GSEA.out.versions)
+    ch_versions
+        .map { f -> f.text }
+        .unique()
+        .mix(Channel.of("\"Workflow\":\n    luad-rnaseq-nextflow: \"${workflow.manifest.version}\"\n    nextflow: \"${workflow.nextflow.version}\"\n".toString()))
+        .collectFile(name: 'software_versions.yml', storeDir: "${params.outdir}/pipeline_info", sort: true)
 }

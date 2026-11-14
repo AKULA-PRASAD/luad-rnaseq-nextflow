@@ -13,11 +13,15 @@ process DESEQ2 {
     path 'significant_genes.csv', emit: significant
     path 'summary.txt',          emit: summary
     path '*.pdf',                emit: plots
+    path 'versions.yml', emit: versions
 
     script:
     """
     deseq2.R --counts ${counts} --samplesheet ${samplesheet} \\
         --reference ${params.reference_level} --padj ${params.padj} \\
         --batch "${params.batch_column ?: ''}"
+    printf '"%s":\\n    r: "%s"\\n    deseq2: "%s"\\n' "${task.process}" \\
+        "\$(Rscript -e 'cat(as.character(getRversion()))')" \\
+        "\$(Rscript -e 'cat(as.character(packageVersion("DESeq2")))')" > versions.yml
     """
 }

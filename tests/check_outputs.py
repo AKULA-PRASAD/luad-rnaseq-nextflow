@@ -56,5 +56,23 @@ check(all(abs(float(res[g]["log2FoldChange"]) - truth[g]) < 1.0 for g in planted
 false_pos = sig - planted
 check(len(false_pos) <= 2, f"{len(false_pos)} false positives among {len(truth) - len(planted)} unchanged genes (allowed <= 2)")
 
+gsea_file = res_dir / "gsea/gsea_results.tsv"
+check(gsea_file.exists(), "output exists: gsea/gsea_results.tsv")
+if gsea_file.exists():
+    gs = {r["pathway"]: r for r in csv.DictReader(open(gsea_file), delimiter="\t")}
+    for name, sign in (("TEST_UP_IN_TUMOR", 1), ("TEST_DOWN_IN_TUMOR", -1)):
+        r = gs.get(name)
+        ok = r is not None and float(r["padj"]) < 0.05 and float(r["NES"]) * sign > 0
+        check(ok, f"GSEA: {name} enriched {'up' if sign > 0 else 'down'} at padj < 0.05")
+    r = gs.get("TEST_UNCHANGED")
+    check(r is not None and float(r["padj"]) >= 0.05, "GSEA: TEST_UNCHANGED not significant")
+
+versions_file = res_dir / "pipeline_info/software_versions.yml"
+check(versions_file.exists(), "output exists: pipeline_info/software_versions.yml")
+if versions_file.exists():
+    text = versions_file.read_text()
+    for tool in ("fastqc:", "star:", "python:", "deseq2:", "fgsea:", "multiqc:", "nextflow:"):
+        check(tool in text, f"software_versions.yml records {tool.rstrip(':')}")
+
 print(f"\n{len(fails)} failure(s)")
 sys.exit(1 if fails else 0)

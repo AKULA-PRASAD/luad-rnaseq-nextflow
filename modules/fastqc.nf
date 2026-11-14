@@ -11,6 +11,7 @@ process FASTQC {
     output:
     tuple val(meta), path('*.html'), emit: html
     tuple val(meta), path('*.zip'),  emit: zip
+    path 'versions.yml', emit: versions
 
     // FastQC is a Java program. Each JVM writes /tmp/hsperfdata_<user>/<pid>; parallel tasks in
     // separate containers can share a pid and the host /tmp, collide on that file and crash with
@@ -19,5 +20,6 @@ process FASTQC {
     """
     export _JAVA_OPTIONS="-XX:-UsePerfData"
     fastqc --threads ${task.cpus} --quiet --dir . ${reads}
+    printf '"%s":\\n    fastqc: "%s"\\n' "${task.process}" "\$(fastqc --version | sed 's/FastQC v//')" > versions.yml
     """
 }

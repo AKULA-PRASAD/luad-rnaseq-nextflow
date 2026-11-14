@@ -15,6 +15,7 @@ process STAR_ALIGN {
     tuple val(meta), path("${meta.id}.ReadsPerGene.out.tab"),          emit: counts
     tuple val(meta), path("${meta.id}.Log.final.out"),                 emit: log
     tuple val(meta), path("${meta.id}.Aligned.sortedByCoord.out.bam"), emit: bam
+    path 'versions.yml', emit: versions
 
     script:
     def r1s = [r1].flatten().collect { it.name }
@@ -48,5 +49,6 @@ process STAR_ALIGN {
         --quantMode GeneCounts \\
         --outFileNamePrefix ${meta.id}.
     rm -f *.unzipped
+    printf '"%s":\\n    star: "%s"\\n' "${task.process}" "\$(${star} --version)" > versions.yml
     """
 }

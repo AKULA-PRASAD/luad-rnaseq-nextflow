@@ -10,9 +10,11 @@ process MULTIQC {
     output:
     path 'multiqc_report.html', emit: report
     path 'multiqc_report_data', emit: data
+    path 'versions.yml', emit: versions
 
     script:
     """
     multiqc --force --filename multiqc_report.html .
+    printf '"%s":\\n    multiqc: "%s"\\n' "${task.process}" "\$(multiqc --version | sed 's/.*version //')" > versions.yml
     """
 }
