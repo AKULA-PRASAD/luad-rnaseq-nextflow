@@ -3,16 +3,17 @@
 [![ci](https://github.com/AKULA-PRASAD/luad-rnaseq-nextflow/actions/workflows/ci.yml/badge.svg)](https://github.com/AKULA-PRASAD/luad-rnaseq-nextflow/actions/workflows/ci.yml)
 ![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A524.04-23aa62)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+![Release](https://img.shields.io/github/v/release/AKULA-PRASAD/luad-rnaseq-nextflow)
 
 A Nextflow DSL2 pipeline that takes raw RNA-seq reads to a differential-expression result:
 
-**FASTQ → FastQC → STAR alignment and gene counts → count matrix → DESeq2 (R) → MultiQC**
+**FASTQ → FastQC → STAR alignment and gene counts → count matrix → DESeq2 (R) → gene set enrichment (fgsea) → MultiQC**
 
 It is applied here to lung adenocarcinoma (LUAD) tumours and matched normal lung tissue, and is tested on every change against synthetic data with known answers.
 
 ## Objective
 
-Find the genes whose expression differs between lung adenocarcinoma and the adjacent normal lung of the same patient. Do this with a workflow that anyone can rerun from public data and get the same numbers.
+Find the genes, and the biological programmes, whose expression differs between lung adenocarcinoma and the adjacent normal lung of the same patient. Do this with a workflow that anyone can rerun from public data and get the same numbers.
 
 ## Dataset
 
@@ -35,6 +36,7 @@ flowchart LR
   G[genome.fa + genes.gtf] --> C[STAR_INDEX] --> D
   D --> E[MERGE_COUNTS<br/>strand detection<br/>gene names]
   E --> F[DESEQ2<br/>~ patient + condition]
+  F --> H[GSEA<br/>fgsea, Hallmark]
   B --> M[MULTIQC]
   D --> M
 ```
@@ -46,9 +48,10 @@ flowchart LR
 | `STAR_ALIGN` | STAR 2.7.11b | Spliced alignment of all runs of a sample together. Gene counts are made in the same pass (`--quantMode GeneCounts`) |
 | `MERGE_COUNTS` | Python 3.12 (standard library) | Builds the gene × sample matrix, detects strandedness and adds gene names from the GTF |
 | `DESEQ2` | DESeq2 1.46.0 (R 4.4) | Median-of-ratios normalisation, Wald test, Benjamini–Hochberg; volcano plot and PCA |
+| `GSEA` | fgsea 1.32.2 (R 4.4) | Pre-ranked enrichment of the MSigDB Hallmark gene sets on the DESeq2 Wald statistic |
 | `MULTIQC` | MultiQC 1.33 | One HTML report combining FastQC and STAR statistics |
 
-Each tool version is pinned per process, both as a biocontainer image and as a conda package.
+Each tool version is pinned per process, both as a biocontainer image and as a conda package. Every run also records the versions actually used in `pipeline_info/software_versions.yml`.
 
 ## Installation
 
@@ -81,6 +84,8 @@ python3 tests/check_outputs.py results_test_paired tests/data_paired/samplesheet
 
 **When a test passes.** A check passes only if:
 - all 10 planted genes are significant, with the right direction and a fold change within 1 log2 unit;
+- GSEA finds the planted up-set and down-set in the right direction, and not the null set;
+- every tool version is recorded;
 - at most 2 of the 30 unchanged genes are called significant;
 - runs are merged into one column per sample;
 - the library is detected as unstranded;
@@ -119,7 +124,10 @@ P1N,P1,Normal,SRR493938,fastq/SRR493938_1.fastq.gz,fastq/SRR493938_2.fastq.gz
 | `--strandedness` | auto | `auto`, `unstranded`, `forward` or `reverse` |
 | `--batch_column` | none | Samplesheet column added to the DESeq2 design, for example `patient` for matched pairs: `~ batch + condition` |
 | `--reference_level` | Normal | DESeq2 reference condition |
-| `--padj` | 0.05 | Significance threshold (Benjamini–Hochberg) |
+| `--padj` | 0.05 | Significance threshold (Benjamini–Hochberg), used by DESeq2 and GSEA |
+| `--gsea_gmt` | Hallmark (bundled) | Gene sets in GMT format, with gene symbols matching the GTF's `gene_name` |
+| `--gsea_min_size`, `--gsea_max_size` | 15, 500 | Gene-set size limits after matching to the ranked genes |
+| `--skip_gsea` | false | Skip the enrichment step |
 | `--star_simd` | none | Containers only: force one STAR build (`sse4.1`, `avx`, `avx2`) |
 | `--outdir` | results | Output folder |
 
@@ -171,8 +179,9 @@ sbatch --dependency=afterok:$J ~/luad-rnaseq-nextflow/hpc/run_pipeline_node.sbat
 | `star/` | Sorted BAM, alignment log and `ReadsPerGene.out.tab` per sample |
 | `counts/` | `counts_matrix.csv` (gene id, gene name, one column per sample) and `strandedness.tsv` |
 | `deseq2/` | `deseq2_results.csv` (all genes), `significant_genes.csv`, `summary.txt` (including the design), `volcano.pdf`, `pca.pdf` |
+| `gsea/` | `gsea_results.tsv` (NES, p, padj and leading-edge genes per set), `gsea_summary.txt`, `gsea_nes.pdf` |
 | `multiqc/` | One HTML report for FastQC and STAR |
-| `pipeline_info/` | Nextflow timeline, resource report and trace |
+| `pipeline_info/` | Nextflow timeline, resource report, trace and `software_versions.yml` |
 
 ## Results: GSE37764
 
@@ -243,6 +252,7 @@ All listed changes have padj < 10⁻⁴ (largest: MKI67, 2 × 10⁻⁵).
 - **Resumable runs:** `-resume` reuses completed steps.
 - **Tested on every push:** GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on two Nextflow versions and:
   - lints the code (`nextflow lint`, strict syntax);
+  - runs 11 unit tests of the count-merging script (strandedness detection, GTF parsing, matrix assembly);
   - resolves every profile;
   - checks the scripts' syntax;
   - regenerates the synthetic data and confirms it matches the committed copy byte for byte (after decompression);
@@ -276,7 +286,8 @@ An earlier version of this analysis, run as separate SLURM scripts in February 2
 
 - **6 patients:** enough for strong effects, limited power for small ones.
 - **Bulk tissue:** bulk RNA-seq cannot separate cell types. Tumour–normal differences mix changes in cell composition with changes in gene regulation.
-- **Gene-level only:** the pipeline counts genes. It does not quantify transcripts or isoforms, does no read trimming, and does not run pathway or enrichment analysis.
+- **Gene-level only:** the pipeline counts genes. It does not quantify transcripts or isoforms, and does no read trimming.
+- **Human gene sets:** the bundled Hallmark sets use human gene symbols. For other species, pass `--gsea_gmt`, or use `--skip_gsea`.
 - **Research use only:** these results have no clinical use.
 - **Apple Silicon Macs:**
   - the arm64 conda build of STAR 2.7.11b fails during `--quantMode GeneCounts`, so the `conda` profile cannot run the STAR steps there;
@@ -293,7 +304,13 @@ If you use this pipeline, please cite it with the metadata in [`CITATION.cff`](C
 - **FastQC:** Andrews S. FastQC (Babraham Bioinformatics).
 - **MultiQC:** Ewels P, et al. *Bioinformatics* 2016;32:3047–3048.
 - **GENCODE:** Frankish A, et al. *Nucleic Acids Res* 2023;51:D942–D949.
+- **fgsea:** Korotkevich G, et al. *bioRxiv* 2021, doi:10.1101/060012.
+- **MSigDB Hallmark gene sets:** Liberzon A, et al. *Cell Syst* 2015;1:417–425. Gene sets v2024.1.Hs, CC BY 4.0.
+
+## Contributing and changes
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development setup and checks, and [`CHANGELOG.md`](CHANGELOG.md) for the release history.
 
 ## Licence
 
-MIT © Prasad Akula
+MIT © Prasad Akula. The bundled MSigDB Hallmark gene sets are distributed under CC BY 4.0.
