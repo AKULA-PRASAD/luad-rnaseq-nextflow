@@ -31,6 +31,27 @@ nextflow_pipeline {
         }
     }
 
+    test("single-end data with --trim: fastp runs per sample and planted genes are still found") {
+        when {
+            params {
+                trim   = true
+                outdir = "${outputDir}/results"
+            }
+        }
+        then {
+            def out = "${outputDir}/results"
+            assertAll(
+                { assert workflow.success },
+                // the 17 tasks above + 6 fastp
+                { assert workflow.trace.succeeded().size() == 23 },
+                { assert workflow.trace.succeeded().count { it.name.startsWith('FASTP') } == 6 },
+                { assert path("${out}/deseq2/summary.txt").text.contains("significant_padj_lt_0.05\t10") },
+                { assert path("${out}/fastp/T1.fastp.json").exists() },
+                { assert path("${out}/pipeline_info/software_versions.yml").text.contains('fastp: "1.3.6"') }
+            )
+        }
+    }
+
     test("samplesheet validation: a FASTQ listed twice stops the run") {
         when {
             params {

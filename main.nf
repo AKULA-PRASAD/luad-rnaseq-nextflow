@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 /*
- * LUAD RNA-seq: raw FASTQ -> QC -> STAR alignment -> gene counts -> DESeq2 -> GSEA
+ * LUAD RNA-seq: raw FASTQ -> QC -> (optional trimming) -> STAR alignment -> gene counts -> DESeq2 -> GSEA
  *
  * Lung adenocarcinoma tumour vs matched normal tissue from never-smoker women
  * (GEO GSE37764 / SRA SRP012656: 6 patients, paired-end RNA-seq, 2 runs per sample).
@@ -8,6 +8,7 @@
 nextflow.enable.dsl = 2
 
 include { FASTQC       } from './modules/fastqc'
+include { FASTP        } from './modules/fastp'
 include { STAR_INDEX   } from './modules/star_index'
 include { STAR_ALIGN   } from './modules/star_align'
 include { MERGE_COUNTS } from './modules/merge_counts'
@@ -62,8 +63,18 @@ workflow {
     // FastQC per run
     ch_fastqc = ch_rows.map { _s, _meta, run, r1, r2 -> tuple([id: run], r2 ? [r1, r2] : [r1]) }
 
+    // Optional trimming per run (FastQC above still reports the raw reads)
+    ch_runs = ch_rows
+    if (params.trim) {
+        FASTP(ch_rows.map { s, meta, run, r1, r2 -> tuple([id: run, sample: s, meta: meta], r2 ? [r1, r2] : [r1]) })
+        ch_runs = FASTP.out.reads.map { m, reads ->
+            def rs = [reads].flatten().sort { f -> f.name }
+            tuple(m.sample, m.meta, m.id, rs[0], rs.size() > 1 ? rs[1] : null)
+        }
+    }
+
     // STAR per sample: all runs of a sample together, read 1 and read 2 kept apart
-    ch_samples = ch_rows
+    ch_samples = ch_runs
         .map { s, meta, _run, r1, r2 -> tuple(s, meta, r1, r2 ?: 'NONE') }
         .groupTuple()
         .map { s, metas, r1s, r2s ->
@@ -93,17 +104,17 @@ workflow {
         GSEA(DESEQ2.out.results, file(params.gsea_gmt, checkIfExists: true))
     }
 
-    MULTIQC(
-        FASTQC.out.zip.map { _meta, z -> z }
-            .mix(STAR_ALIGN.out.log.map { _meta, l -> l })
-            .collect()
-    )
+    ch_multiqc = FASTQC.out.zip.map { _meta, z -> z }
+        .mix(STAR_ALIGN.out.log.map { _meta, l -> l })
+    if (params.trim) ch_multiqc = ch_multiqc.mix(FASTP.out.json.map { _meta, j -> j })
+    MULTIQC(ch_multiqc.collect())
 
     // One software_versions.yml for the run: each process reports its tool versions
     ch_versions = FASTQC.out.versions
         .mix(STAR_ALIGN.out.versions, MERGE_COUNTS.out.versions, DESEQ2.out.versions, MULTIQC.out.versions)
     if (!params.star_index) ch_versions = ch_versions.mix(STAR_INDEX.out.versions)
     if (!params.skip_gsea)  ch_versions = ch_versions.mix(GSEA.out.versions)
+    if (params.trim)        ch_versions = ch_versions.mix(FASTP.out.versions)
     ch_versions
         .map { f -> f.text }
         .unique()

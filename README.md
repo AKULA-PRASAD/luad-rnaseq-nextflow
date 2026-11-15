@@ -32,6 +32,7 @@ Find the genes, and the biological programmes, whose expression differs between 
 ```mermaid
 flowchart LR
   A[samplesheet.csv<br/>one row per run] --> B[FASTQC<br/>per run]
+  A -.->|--trim| T[FASTP<br/>per run, optional] -.-> D
   A --> D[STAR_ALIGN<br/>runs merged per sample]
   G[genome.fa + genes.gtf] --> C[STAR_INDEX] --> D
   D --> E[MERGE_COUNTS<br/>strand detection<br/>gene names]
@@ -39,11 +40,13 @@ flowchart LR
   F --> H[GSEA<br/>fgsea, Hallmark]
   B --> M[MULTIQC]
   D --> M
+  T -.-> M
 ```
 
 | Step | Tool | What it does |
 |---|---|---|
 | `FASTQC` | FastQC 0.12.1 | Read quality report for each run and mate |
+| `FASTP` (optional, `--trim`) | fastp 1.3.6 | Adapter and quality trimming per run. FastQC still reports the raw reads |
 | `STAR_INDEX` | STAR 2.7.11b | Genome index with splice junctions from the GTF (built once) |
 | `STAR_ALIGN` | STAR 2.7.11b | Spliced alignment of all runs of a sample together. Gene counts are made in the same pass (`--quantMode GeneCounts`) |
 | `MERGE_COUNTS` | Python 3.12 (standard library) | Builds the gene × sample matrix, detects strandedness and adds gene names from the GTF |
@@ -91,7 +94,7 @@ python3 tests/check_outputs.py results_test_paired tests/data_paired/samplesheet
 - the library is detected as unstranded;
 - the DESeq2 design is the expected one.
 
-**nf-test.** The repository also has an [nf-test](https://www.nf-test.com/) suite of 10 tests: one or more per module, plus whole-pipeline tests.
+**nf-test.** The repository also has an [nf-test](https://www.nf-test.com/) suite of 13 tests: one or more per module, plus whole-pipeline tests.
 
 ```bash
 nf-test test                                   # all tests
@@ -143,6 +146,8 @@ P1N,P1,Normal,SRR493938,fastq/SRR493938_1.fastq.gz,fastq/SRR493938_2.fastq.gz
 | `--gsea_gmt` | Hallmark (bundled) | Gene sets in GMT format, with gene symbols matching the GTF's `gene_name` |
 | `--gsea_min_size`, `--gsea_max_size` | 15, 500 | Gene-set size limits after matching to the ranked genes |
 | `--skip_gsea` | false | Skip the enrichment step |
+| `--trim` | false | Trim adapters and low-quality bases with fastp before alignment |
+| `--trim_min_quality`, `--trim_min_length` | 15, 20 | fastp: Phred score below which a base counts as low quality; shortest read kept after trimming |
 | `--star_simd` | none | Containers only: force one STAR build (`sse4.1`, `avx`, `avx2`) |
 | `--outdir` | results | Output folder |
 
@@ -191,6 +196,7 @@ sbatch --dependency=afterok:$J ~/luad-rnaseq-nextflow/hpc/run_pipeline_node.sbat
 | Folder | Contents |
 |---|---|
 | `fastqc/` | Read QC per run and mate |
+| `fastp/` | Trimming reports per run (only with `--trim`) |
 | `star/` | Sorted BAM, alignment log and `ReadsPerGene.out.tab` per sample |
 | `counts/` | `counts_matrix.csv` (gene id, gene name, one column per sample) and `strandedness.tsv` |
 | `deseq2/` | `deseq2_results.csv` (all genes), `significant_genes.csv`, `summary.txt` (including the design), `volcano.pdf`, `pca.pdf` |
@@ -328,7 +334,7 @@ An earlier version of this analysis, run as separate SLURM scripts in February 2
 
 - **6 patients:** enough for strong effects, limited power for small ones.
 - **Bulk tissue:** bulk RNA-seq cannot separate cell types. Tumour–normal differences mix changes in cell composition with changes in gene regulation.
-- **Gene-level only:** the pipeline counts genes. It does not quantify transcripts or isoforms, and does no read trimming.
+- **Gene-level only:** the pipeline counts genes. It does not quantify transcripts or isoforms. Read trimming (`--trim`) is optional and was not used for the GSE37764 results.
 - **Human gene sets:** the bundled Hallmark sets use human gene symbols. For other species, pass `--gsea_gmt`, or use `--skip_gsea`.
 - **Research use only:** these results have no clinical use.
 - **Apple Silicon Macs:**

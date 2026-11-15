@@ -1,0 +1,54 @@
+nextflow_process {
+    name    "FASTP"
+    script  "../../modules/fastp.nf"
+    process "FASTP"
+    tag     "modules"
+
+    test("single-end run: one trimmed FASTQ and a JSON report") {
+        when {
+            params {
+                trim_min_quality = 15
+                trim_min_length  = 20
+            }
+            process {
+                """
+                input[0] = [ [id: 'T1'], [ file("${projectDir}/tests/data/T1.fastq.gz", checkIfExists: true) ] ]
+                """
+            }
+        }
+        then {
+            def json = new groovy.json.JsonSlurper().parse(file(process.out.json[0][1]))
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.reads[0][1]).name == 'T1.trim.fastq.gz' },
+                { assert json.summary.after_filtering.total_reads > 0 },
+                { assert json.summary.after_filtering.total_reads <= json.summary.before_filtering.total_reads },
+                { assert snapshot(process.out.reads, process.out.versions).match() }
+            )
+        }
+    }
+
+    test("paired-end run: read 1 and read 2 trimmed as a pair") {
+        when {
+            params {
+                trim_min_quality = 15
+                trim_min_length  = 20
+            }
+            process {
+                """
+                def d = "${projectDir}/tests/data_paired"
+                input[0] = [ [id: 'P1T_run1'], [ file("\${d}/P1T_run1_1.fastq.gz"), file("\${d}/P1T_run1_2.fastq.gz") ] ]
+                """
+            }
+        }
+        then {
+            def json = new groovy.json.JsonSlurper().parse(file(process.out.json[0][1]))
+            assertAll(
+                { assert process.success },
+                { assert process.out.reads[0][1].collect { file(it).name }.sort() == ['P1T_run1_1.trim.fastq.gz', 'P1T_run1_2.trim.fastq.gz'] },
+                { assert json.summary.after_filtering.total_reads % 2 == 0 },
+                { assert snapshot(process.out.reads).match() }
+            )
+        }
+    }
+}

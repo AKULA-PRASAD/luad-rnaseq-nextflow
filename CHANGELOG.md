@@ -4,12 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] - 2026-11-14
 
 ### Added
-- nf-test suite (`nf-test test`) with 10 tests:
-  - module tests for FastQC, STAR (single-end, and paired-end with two runs), count merging (automatic and explicit strandedness), DESeq2 and GSEA;
-  - pipeline tests on both synthetic datasets;
+- Optional adapter and quality trimming with fastp 1.3.6 (`--trim`, `--trim_min_quality`, `--trim_min_length`):
+  - off by default, so results without `--trim` are unchanged;
+  - FastQC still reports the raw reads, and fastp's reports go to MultiQC.
+- nf-test suite (`nf-test test`) with 13 tests:
+  - module tests for FastQC, fastp (single-end and paired-end), STAR (single-end, and paired-end with two runs), count merging (automatic and explicit strandedness), DESeq2 and GSEA;
+  - pipeline tests on both synthetic datasets, and with `--trim`;
   - a test that a samplesheet listing the same FASTQ twice is rejected.
   Outputs that should never change are checked against committed snapshots, and the planted effects are checked against the generator's truth table.
 - CI job that runs the nf-test suite in `--ci` mode (a missing or changed snapshot fails the build) and uploads a JUnit report.

@@ -31,7 +31,7 @@ jobs:
       - name: Repository structure and script syntax
         run: |
           for f in main.nf nextflow.config README.md LICENSE CITATION.cff assets/samplesheet_GSE37764.csv assets/h.all.v2024.1.Hs.symbols.gmt \
-                   modules/{fastqc,star_index,star_align,merge_counts,deseq2,gsea,multiqc}.nf \
+                   modules/{fastqc,fastp,star_index,star_align,merge_counts,deseq2,gsea,multiqc}.nf \
                    bin/{merge_counts.py,deseq2.R,gsea.R,fetch_sra.sh} conf/{test,test_paired,explorer,explorer_node}.config; do
             test -f "$f" || { echo "missing: $f"; exit 1; }
           done

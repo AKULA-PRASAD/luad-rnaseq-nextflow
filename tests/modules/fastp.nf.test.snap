@@ -1,0 +1,42 @@
+{
+    "single-end run: one trimmed FASTQ and a JSON report": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "T1"
+                    },
+                    "T1.trim.fastq.gz:md5,932540b558083a69f7f4e513732933bb"
+                ]
+            ],
+            [
+                "versions.yml:md5,0332549ddd26c3b16e862fbfa8220aa0"
+            ]
+        ],
+        "timestamp": "2026-11-14T21:07:31.876068",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    },
+    "paired-end run: read 1 and read 2 trimmed as a pair": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "P1T_run1"
+                    },
+                    [
+                        "P1T_run1_1.trim.fastq.gz:md5,b9eb4bc5191f683a838aab78f182e80c",
+                        "P1T_run1_2.trim.fastq.gz:md5,48e06b45961888365400acd9d20262e4"
+                    ]
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-14T21:07:35.079508",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    }
+}
