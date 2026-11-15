@@ -1,0 +1,14 @@
+{
+    "paired-end data: two runs per sample, ~ patient + condition": {
+        "content": [
+            "counts_matrix.csv:md5,3c6155d102e18f203d456437f57ffd81",
+            "summary.txt:md5,ca82f3ae6fafc3aba171021deb560e1b",
+            "gsea_summary.txt:md5,6bcf24fb6a2a9fa943d367e8adaf53bb"
+        ],
+        "timestamp": "2026-11-14T20:49:43.713488",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    }
+}

@@ -1,0 +1,35 @@
+nextflow_process {
+    name    "GSEA"
+    script  "../../modules/gsea.nf"
+    process "GSEA"
+    tag     "modules"
+
+    test("planted gene sets are enriched in the right direction") {
+        when {
+            params {
+                padj          = 0.05
+                gsea_min_size = 3
+                gsea_max_size = 500
+            }
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/deseq2_results.csv", checkIfExists: true)
+                input[1] = file("${projectDir}/tests/data/genesets.gmt", checkIfExists: true)
+                """
+            }
+        }
+        then {
+            def lines = path(process.out.results[0]).readLines()
+            def head  = lines[0].split('\t') as List
+            def res   = lines.drop(1).collect { l -> [head, l.split('\t') as List].transpose().collectEntries { it } }
+                             .collectEntries { [it.pathway, it] }
+            assertAll(
+                { assert process.success },
+                { assert res.TEST_UP_IN_TUMOR.NES.toDouble()   > 0 && res.TEST_UP_IN_TUMOR.padj.toDouble()   < 0.05 },
+                { assert res.TEST_DOWN_IN_TUMOR.NES.toDouble() < 0 && res.TEST_DOWN_IN_TUMOR.padj.toDouble() < 0.05 },
+                { assert res.TEST_UNCHANGED.padj.toDouble() >= 0.05 },
+                { assert snapshot(process.out.summary, process.out.versions).match() }
+            )
+        }
+    }
+}

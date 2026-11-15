@@ -1,0 +1,14 @@
+{
+    "single-end reads give one HTML and one zip report": {
+        "content": [
+            [
+                "versions.yml:md5,7d6d8154ef9d8533e87d162bbd7c5382"
+            ]
+        ],
+        "timestamp": "2026-11-14T20:45:42.296977",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    }
+}

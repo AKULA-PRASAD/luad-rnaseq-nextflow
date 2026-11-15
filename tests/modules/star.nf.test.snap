@@ -1,0 +1,41 @@
+{
+    "paired-end sample with two runs is aligned as one sample": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "P1T",
+                        "single_end": false
+                    },
+                    "P1T.ReadsPerGene.out.tab:md5,255a4e1eb13e71be22d0b900372ade8d"
+                ]
+            ]
+        ],
+        "timestamp": "2026-11-14T20:45:57.610451",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    },
+    "single-end sample: gene counts match a fixed snapshot": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "T1",
+                        "single_end": true
+                    },
+                    "T1.ReadsPerGene.out.tab:md5,8209d0b85a82861717e0b85bb8981c4a"
+                ]
+            ],
+            [
+                "versions.yml:md5,feeec83d59c8c627b7e435093bd6690f"
+            ]
+        ],
+        "timestamp": "2026-11-14T20:45:53.163902",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    }
+}

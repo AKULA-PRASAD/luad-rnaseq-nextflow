@@ -1,0 +1,24 @@
+nextflow_process {
+    name    "FASTQC"
+    script  "../../modules/fastqc.nf"
+    process "FASTQC"
+    tag     "modules"
+
+    test("single-end reads give one HTML and one zip report") {
+        when {
+            process {
+                """
+                input[0] = [ [id: 'T1'], [ file("${projectDir}/tests/data/T1.fastq.gz", checkIfExists: true) ] ]
+                """
+            }
+        }
+        then {
+            assertAll(
+                { assert process.success },
+                { assert file(process.out.html[0][1]).name == 'T1_fastqc.html' },
+                { assert file(process.out.zip[0][1]).name  == 'T1_fastqc.zip' },
+                { assert snapshot(process.out.versions).match() }
+            )
+        }
+    }
+}

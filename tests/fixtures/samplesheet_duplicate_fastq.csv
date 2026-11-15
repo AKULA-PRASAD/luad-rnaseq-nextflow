@@ -1,0 +1,4 @@
+sample,condition,fastq_1
+N1,Normal,../data/N1.fastq.gz
+N9,Normal,../data/N1.fastq.gz
+T1,Tumor,../data/T1.fastq.gz

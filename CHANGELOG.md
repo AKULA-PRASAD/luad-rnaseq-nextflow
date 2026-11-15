@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- nf-test suite (`nf-test test`) with 10 tests:
+  - module tests for FastQC, STAR (single-end, and paired-end with two runs), count merging (automatic and explicit strandedness), DESeq2 and GSEA;
+  - pipeline tests on both synthetic datasets;
+  - a test that a samplesheet listing the same FASTQ twice is rejected.
+  Outputs that should never change are checked against committed snapshots, and the planted effects are checked against the generator's truth table.
+- CI job that runs the nf-test suite in `--ci` mode (a missing or changed snapshot fails the build) and uploads a JUnit report.
+
 ## [1.0.0] - 2026-11-14
 
 First public release.

@@ -1,0 +1,28 @@
+nextflow_pipeline {
+    name    "Full pipeline (paired-end test data)"
+    script  "../main.nf"
+    tag     "pipeline"
+    config  "../conf/test_paired.config"
+
+    test("paired-end data: two runs per sample, ~ patient + condition") {
+        when {
+            params {
+                outdir = "${outputDir}/results"
+            }
+        }
+        then {
+            def out = "${outputDir}/results"
+            assertAll(
+                { assert workflow.success },
+                // 1 index + 12 FastQC (one per run) + 6 align (one per sample) + merge + DESeq2 + GSEA + MultiQC
+                { assert workflow.trace.succeeded().size() == 23 },
+                { assert path("${out}/deseq2/summary.txt").text.contains("~batch + condition") },
+                { assert snapshot(
+                        path("${out}/counts/counts_matrix.csv"),
+                        path("${out}/deseq2/summary.txt"),
+                        path("${out}/gsea/gsea_summary.txt")
+                    ).match() }
+            )
+        }
+    }
+}

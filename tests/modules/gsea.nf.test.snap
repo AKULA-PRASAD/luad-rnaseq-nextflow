@@ -1,0 +1,17 @@
+{
+    "planted gene sets are enriched in the right direction": {
+        "content": [
+            [
+                "gsea_summary.txt:md5,6bcf24fb6a2a9fa943d367e8adaf53bb"
+            ],
+            [
+                "versions.yml:md5,70a1fc14fedf9ba990e8d7e77c9b7a3e"
+            ]
+        ],
+        "timestamp": "2026-11-14T20:45:48.770314",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    }
+}

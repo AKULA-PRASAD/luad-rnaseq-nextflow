@@ -1,0 +1,14 @@
+{
+    "single-end data: all steps run and results match the fixtures": {
+        "content": [
+            "strandedness.tsv:md5,eacb99b118723e9ea599aaa2fb40d52e",
+            "summary.txt:md5,d25c6d2193777ebe42de9e4ab6e8af51",
+            "gsea_summary.txt:md5,6bcf24fb6a2a9fa943d367e8adaf53bb"
+        ],
+        "timestamp": "2026-11-14T20:48:50.800612",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    }
+}

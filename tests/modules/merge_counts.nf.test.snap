@@ -1,0 +1,31 @@
+{
+    "auto strandedness: unstranded library, matrix matches the fixture": {
+        "content": [
+            {
+                "0": [
+                    "counts_matrix.csv:md5,9d9e823b844069da5d2a4b1c1e454161"
+                ],
+                "1": [
+                    "strandedness.tsv:md5,eacb99b118723e9ea599aaa2fb40d52e"
+                ],
+                "2": [
+                    "versions.yml:md5,b19dfbf6a865949365a436c1cd4e1641"
+                ],
+                "matrix": [
+                    "counts_matrix.csv:md5,9d9e823b844069da5d2a4b1c1e454161"
+                ],
+                "strandedness": [
+                    "strandedness.tsv:md5,eacb99b118723e9ea599aaa2fb40d52e"
+                ],
+                "versions": [
+                    "versions.yml:md5,b19dfbf6a865949365a436c1cd4e1641"
+                ]
+            }
+        ],
+        "timestamp": "2026-11-14T20:45:14.304153",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    }
+}

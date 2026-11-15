@@ -1,0 +1,17 @@
+{
+    "recovers exactly the 10 planted genes, each in the planted direction": {
+        "content": [
+            [
+                "summary.txt:md5,d25c6d2193777ebe42de9e4ab6e8af51"
+            ],
+            [
+                "versions.yml:md5,77df87005eae2af503fe2825ed478ada"
+            ]
+        ],
+        "timestamp": "2026-11-14T20:45:36.258105",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.04.8"
+        }
+    }
+}

@@ -1,0 +1,72 @@
+nextflow_process {
+    name    "STAR_ALIGN"
+    script  "../../modules/star_align.nf"
+    process "STAR_ALIGN"
+    tag     "modules"
+
+    setup {
+        run("STAR_INDEX") {
+            script "../../modules/star_index.nf"
+            process {
+                """
+                input[0] = file("${projectDir}/tests/data/genome.fa", checkIfExists: true)
+                input[1] = file("${projectDir}/tests/data/genes.gtf", checkIfExists: true)
+                """
+            }
+        }
+    }
+
+    test("single-end sample: gene counts match a fixed snapshot") {
+        when {
+            params {
+                sjdb_overhang   = 26
+                sa_index_nbases = 6
+                star_simd       = null
+            }
+            process {
+                """
+                input[0] = [ [id: 'T1', single_end: true],
+                             [ file("${projectDir}/tests/data/T1.fastq.gz", checkIfExists: true) ], [] ]
+                input[1] = STAR_INDEX.out.index
+                """
+            }
+        }
+        then {
+            def log = path(process.out.log[0][1]).text
+            assertAll(
+                { assert process.success },
+                { assert log =~ /Uniquely mapped reads % \|\s+\d+/ },
+                { assert file(process.out.bam[0][1]).size() > 0 },
+                { assert path(process.out.counts[0][1]).md5 == path("${projectDir}/tests/fixtures/star/T1.ReadsPerGene.out.tab").md5 },
+                { assert snapshot(process.out.counts, process.out.versions).match() }
+            )
+        }
+    }
+
+    test("paired-end sample with two runs is aligned as one sample") {
+        when {
+            params {
+                sjdb_overhang   = 26
+                sa_index_nbases = 6
+                star_simd       = null
+            }
+            process {
+                """
+                def d = "${projectDir}/tests/data_paired"
+                input[0] = [ [id: 'P1T', single_end: false],
+                             [ file("\${d}/P1T_run1_1.fastq.gz"), file("\${d}/P1T_run2_1.fastq.gz") ],
+                             [ file("\${d}/P1T_run1_2.fastq.gz"), file("\${d}/P1T_run2_2.fastq.gz") ] ]
+                input[1] = STAR_INDEX.out.index
+                """
+            }
+        }
+        then {
+            def log = path(process.out.log[0][1]).text
+            assertAll(
+                { assert process.success },
+                { assert (log =~ /Number of input reads \|\s+(\d+)/)[0][1].toInteger() > 0 },
+                { assert snapshot(process.out.counts).match() }
+            )
+        }
+    }
+}

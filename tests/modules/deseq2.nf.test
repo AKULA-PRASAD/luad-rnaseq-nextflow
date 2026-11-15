@@ -1,0 +1,39 @@
+nextflow_process {
+    name    "DESEQ2"
+    script  "../../modules/deseq2.nf"
+    process "DESEQ2"
+    tag     "modules"
+
+    test("recovers exactly the 10 planted genes, each in the planted direction") {
+        when {
+            params {
+                reference_level = 'Normal'
+                padj            = 0.05
+                batch_column    = null
+            }
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/counts_matrix.csv", checkIfExists: true)
+                input[1] = file("${projectDir}/tests/data/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+        then {
+            // planted log2 fold change per gene name, from the generator's truth table
+            def truth = path("${projectDir}/tests/data/truth.tsv").readLines().drop(1)
+                .collect { it.split('\t') }.collectEntries { [it[1], it[2].toDouble()] }
+            def lines = path(process.out.significant[0]).readLines()
+            def head  = lines[0].split(',').collect { it.replace('"', '') }
+            def sig   = lines.drop(1).collect { l ->
+                def v = l.split(',').collect { it.replace('"', '') }
+                [head, v].transpose().collectEntries { it }
+            }
+            assertAll(
+                { assert process.success },
+                { assert sig*.gene_name as Set == truth.findAll { it.value != 0 }.keySet() },
+                { assert sig.every { Math.signum(it.log2FoldChange.toDouble()) == Math.signum(truth[it.gene_name]) } },
+                { assert snapshot(process.out.summary, process.out.versions).match() }
+            )
+        }
+    }
+}

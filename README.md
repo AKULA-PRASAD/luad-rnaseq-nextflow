@@ -91,6 +91,21 @@ python3 tests/check_outputs.py results_test_paired tests/data_paired/samplesheet
 - the library is detected as unstranded;
 - the DESeq2 design is the expected one.
 
+**nf-test.** The repository also has an [nf-test](https://www.nf-test.com/) suite of 10 tests: one or more per module, plus whole-pipeline tests.
+
+```bash
+nf-test test                                   # all tests
+nf-test test --tag modules                     # module tests only, under a minute
+NFT_PLATFORM=linux/amd64 nf-test test          # on Apple Silicon (amd64 containers under Rosetta)
+```
+
+Module tests run each process alone on small inputs. They check:
+- that STAR reproduces the committed per-gene counts;
+- that DESeq2 finds exactly the planted genes;
+- that GSEA calls the planted gene sets in the right direction.
+
+The pipeline tests run both synthetic datasets end to end, and check that a samplesheet listing a FASTQ twice is rejected. Outputs that should never change are compared with snapshots committed in `tests/`.
+
 ## Running on your own data
 
 ```bash
@@ -279,7 +294,8 @@ Pre-ranked GSEA (fgsea 1.32.2) on the DESeq2 Wald statistic of the 31,135 named 
   - checks the scripts' syntax;
   - regenerates the synthetic data and confirms it matches the committed copy byte for byte (after decompression);
   - runs both test profiles in Docker and checks the results against the planted truth;
-  - confirms that `-resume` uses the cache.
+  - confirms that `-resume` uses the cache;
+  - runs the nf-test suite. A changed or missing snapshot fails the build.
 - **Reproduced on the cluster:** the 1.0.0 rerun of GSE37764 reproduced the first run:
   - an identical count matrix;
   - the same 7,541 significant genes;

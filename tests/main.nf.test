@@ -1,0 +1,50 @@
+nextflow_pipeline {
+    name   "Full pipeline (single-end test data)"
+    script "../main.nf"
+    tag    "pipeline"
+    config  "../conf/test.config"
+
+    test("single-end data: all steps run and results match the fixtures") {
+        when {
+            params {
+                outdir = "${outputDir}/results"
+            }
+        }
+        then {
+            def out = "${outputDir}/results"
+            assertAll(
+                { assert workflow.success },
+                // 1 index + 6 FastQC + 6 align + merge + DESeq2 + GSEA + MultiQC
+                { assert workflow.trace.succeeded().size() == 17 },
+                { assert path("${out}/counts/counts_matrix.csv").md5 == path("${projectDir}/tests/fixtures/counts_matrix.csv").md5 },
+                { assert path("${out}/multiqc/multiqc_report.html").exists() },
+                { assert path("${out}/gsea/gsea_nes.pdf").exists() },
+                { assert snapshot(
+                        path("${out}/counts/strandedness.tsv"),
+                        path("${out}/deseq2/summary.txt"),
+                        path("${out}/gsea/gsea_summary.txt")
+                    ).match() },
+                // tool versions are pinned; the Nextflow version is left out because CI runs several
+                { assert ['fastqc: "0.12.1"', 'star: "2.7.11b"', 'deseq2: "1.46.0"', 'fgsea: "1.32.2"', 'multiqc: "1.33"']
+                        .every { path("${out}/pipeline_info/software_versions.yml").text.contains(it) } }
+            )
+        }
+    }
+
+    test("samplesheet validation: a FASTQ listed twice stops the run") {
+        when {
+            params {
+                samplesheet = "${projectDir}/tests/fixtures/samplesheet_duplicate_fastq.csv"
+                outdir      = "${outputDir}/results"
+            }
+        }
+        then {
+            assertAll(
+                { assert workflow.failed },
+                { assert workflow.stdout.any { it.contains("same FASTQ file more than once") } ||
+                         workflow.stderr.any { it.contains("same FASTQ file more than once") } },
+                { assert workflow.trace.tasks().size() == 0 }
+            )
+        }
+    }
+}
