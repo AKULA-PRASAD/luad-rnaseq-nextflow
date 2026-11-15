@@ -7,9 +7,11 @@
 
 A Nextflow DSL2 pipeline that takes raw RNA-seq reads to a differential-expression result:
 
-**FASTQ → FastQC → STAR alignment and gene counts → count matrix → DESeq2 (R) → gene set enrichment (fgsea) → MultiQC**
+**FASTQ → FastQC → (optional fastp trimming) → STAR alignment and gene counts → count matrix → DESeq2 (R) → gene set enrichment (fgsea) → MultiQC**
 
 It is applied here to lung adenocarcinoma (LUAD) tumours and matched normal lung tissue, and is tested on every change against synthetic data with known answers.
+
+**Project page with interactive results:** https://akula-prasad.github.io/luad-rnaseq-nextflow/
 
 ## Objective
 
