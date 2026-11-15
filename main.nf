@@ -118,6 +118,6 @@ workflow {
     ch_versions
         .map { f -> f.text }
         .unique()
-        .mix(Channel.of("\"Workflow\":\n    luad-rnaseq-nextflow: \"${workflow.manifest.version}\"\n    nextflow: \"${workflow.nextflow.version}\"\n".toString()))
+        .mix(Channel.of("\"Workflow\":\n    ${workflow.manifest.name}: \"${workflow.manifest.version}\"\n    nextflow: \"${workflow.nextflow.version}\"\n".toString()))
         .collectFile(name: 'software_versions.yml', storeDir: "${params.outdir}/pipeline_info", sort: true)
 }

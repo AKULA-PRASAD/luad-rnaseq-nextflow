@@ -1,9 +1,9 @@
 # LUAD RNA-seq pipeline (Nextflow)
 
-[![ci](https://github.com/AKULA-PRASAD/luad-rnaseq-nextflow/actions/workflows/ci.yml/badge.svg)](https://github.com/AKULA-PRASAD/luad-rnaseq-nextflow/actions/workflows/ci.yml)
+[![ci](https://github.com/AKULA-PRASAD/lung-cancer-rnaseq-nextflow/actions/workflows/ci.yml/badge.svg)](https://github.com/AKULA-PRASAD/lung-cancer-rnaseq-nextflow/actions/workflows/ci.yml)
 ![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A524.04-23aa62)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
-![Release](https://img.shields.io/github/v/release/AKULA-PRASAD/luad-rnaseq-nextflow)
+![Release](https://img.shields.io/github/v/release/AKULA-PRASAD/lung-cancer-rnaseq-nextflow)
 
 A Nextflow DSL2 pipeline that takes raw RNA-seq reads to a differential-expression result:
 
@@ -11,7 +11,7 @@ A Nextflow DSL2 pipeline that takes raw RNA-seq reads to a differential-expressi
 
 It is applied here to lung adenocarcinoma (LUAD) tumours and matched normal lung tissue, and is tested on every change against synthetic data with known answers.
 
-**Project page with interactive results:** https://akula-prasad.github.io/luad-rnaseq-nextflow/
+**Project page with interactive results:** https://akula-prasad.github.io/lung-cancer-rnaseq-nextflow/
 
 ## Objective
 
@@ -67,8 +67,8 @@ Each tool version is pinned per process, both as a biocontainer image and as a c
 
 ```bash
 curl -s https://get.nextflow.io | bash && mv nextflow ~/bin/   # or: conda install -c bioconda nextflow
-git clone https://github.com/AKULA-PRASAD/luad-rnaseq-nextflow.git
-cd luad-rnaseq-nextflow
+git clone https://github.com/AKULA-PRASAD/lung-cancer-rnaseq-nextflow.git
+cd lung-cancer-rnaseq-nextflow
 ```
 
 There is nothing else to install: each step pulls its own pinned container, or builds its own conda environment.
@@ -172,7 +172,7 @@ P=/scratch/$USER/luad; mkdir -p $P/{sra,fastq,ref,logs,containers}; cd $P
 
 # 1. Login node: SRA runs (~71 GB), GENCODE v44 reference, containers
 module load sratoolkit/12Dec2024
-~/luad-rnaseq-nextflow/bin/fetch_sra.sh ~/luad-rnaseq-nextflow/assets/samplesheet_GSE37764.csv .
+~/lung-cancer-rnaseq-nextflow/bin/fetch_sra.sh ~/lung-cancer-rnaseq-nextflow/assets/samplesheet_GSE37764.csv .
 G=https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44
 (cd ref && wget $G/GRCh38.primary_assembly.genome.fa.gz $G/gencode.v44.primary_assembly.annotation.gtf.gz)
 export APPTAINER_TMPDIR=/tmp/$USER-apptainer          # local disk: much faster than /scratch
@@ -184,8 +184,8 @@ done
 cd ..
 
 # 2. Compute nodes: SRA -> FASTQ (24-task array job), then the whole pipeline in one allocation
-J=$(sbatch --parsable ~/luad-rnaseq-nextflow/hpc/fastq_array.sbatch)
-sbatch --dependency=afterok:$J ~/luad-rnaseq-nextflow/hpc/run_pipeline_node.sbatch
+J=$(sbatch --parsable ~/lung-cancer-rnaseq-nextflow/hpc/fastq_array.sbatch)
+sbatch --dependency=afterok:$J ~/lung-cancer-rnaseq-nextflow/hpc/run_pipeline_node.sbatch
 ```
 
 **Three Explorer issues the scripts work around:**

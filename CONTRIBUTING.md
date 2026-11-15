@@ -12,8 +12,8 @@ Open an issue and include:
 ## Development setup
 
 ```bash
-git clone https://github.com/AKULA-PRASAD/luad-rnaseq-nextflow.git
-cd luad-rnaseq-nextflow
+git clone https://github.com/AKULA-PRASAD/lung-cancer-rnaseq-nextflow.git
+cd lung-cancer-rnaseq-nextflow
 python3 tests/make_test_data.py          # regenerates tests/data*/ (deterministic)
 ```
 

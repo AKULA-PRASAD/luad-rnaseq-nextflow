@@ -1,9 +1,9 @@
 cff-version: 1.2.0
 message: "If you use this pipeline, please cite it as below, together with the dataset and tools listed in the README."
-title: "luad-rnaseq-nextflow: Nextflow RNA-seq pipeline for lung adenocarcinoma tumour vs matched normal (GSE37764)"
+title: "lung-cancer-rnaseq-nextflow: Nextflow RNA-seq pipeline for lung adenocarcinoma tumour vs matched normal (GSE37764)"
 version: 1.1.0
 license: MIT
-repository-code: "https://github.com/AKULA-PRASAD/luad-rnaseq-nextflow"
+repository-code: "https://github.com/AKULA-PRASAD/lung-cancer-rnaseq-nextflow"
 authors:
   - family-names: Akula
     given-names: Prasad
